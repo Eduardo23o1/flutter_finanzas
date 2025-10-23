@@ -44,6 +44,10 @@ dependencies:
   jwt_decode: ^0.3.1
   web_socket_channel: ^3.0.3
   intl: ^0.20.2
+  firebase_core: ^4.2.0
+  firebase_auth: ^6.1.1
+  syncfusion_flutter_charts: ^31.1.19
+  
 
 dev_dependencies:
   flutter_test:

@@ -13,27 +13,6 @@ class TransactionCard extends StatelessWidget {
     required this.onTap,
   });
 
-  String _translateCategory(TransactionCategory category) {
-    switch (category) {
-      case TransactionCategory.food:
-        return 'Comida';
-      case TransactionCategory.transport:
-        return 'Transporte';
-      case TransactionCategory.entertainment:
-        return 'Entretenimiento';
-      case TransactionCategory.shopping:
-        return 'Compras';
-      case TransactionCategory.health:
-        return 'Salud';
-      case TransactionCategory.education:
-        return 'Educación';
-      case TransactionCategory.salary:
-        return 'Salario';
-      case TransactionCategory.other:
-        return 'Otros';
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final formattedAmount = NumberFormat.currency(
@@ -82,7 +61,8 @@ class TransactionCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    _translateCategory(transaction.category),
+                    transactionCategoryTranslations[transaction.category] ??
+                        'Desconocido',
                     style: const TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 16,

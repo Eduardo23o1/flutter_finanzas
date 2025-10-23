@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "195033264569",
+    "project_id": "ptflutter-144bc",
+    "storage_bucket": "ptflutter-144bc.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:195033264569:android:242ee7f409472a53cc0668",
+        "android_client_info": {
+          "package_name": "com.example.prueba_tecnica_finanzas_frontend"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD2x8mNCRI2i6DPryttLmsP1hVuBITcHUU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:195033264569:android:db31a88313da9089cc0668",
+        "android_client_info": {
+          "package_name": "com.example.prueba_tecnica_finanzas_frontend2"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD2x8mNCRI2i6DPryttLmsP1hVuBITcHUU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

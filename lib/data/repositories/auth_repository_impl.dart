@@ -27,4 +27,9 @@ class AuthRepositoryImpl implements AuthRepository {
     }
     return null;
   }
+
+  @override
+  Future<String?> register(String email, String password) async {
+    throw UnimplementedError('Registro no soportado en el backend actual');
+  }
 }

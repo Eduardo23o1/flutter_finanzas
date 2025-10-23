@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 
 class ApiClient {
@@ -12,6 +13,12 @@ class ApiClient {
   }
 
   Future<http.Response> get(String endpoint) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final freshToken = await user.getIdToken(true);
+      updateToken(freshToken!);
+    }
+
     final url = Uri.parse('$baseUrl$endpoint');
     return http.get(url, headers: _buildHeaders());
   }

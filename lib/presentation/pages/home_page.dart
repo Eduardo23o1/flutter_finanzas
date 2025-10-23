@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:prueba_tecnica_finanzas_frontend2/core/utils/constants.dart';
 import 'package:prueba_tecnica_finanzas_frontend2/presentation/widgets/custom_app_bar.dart';
 import 'package:prueba_tecnica_finanzas_frontend2/presentation/widgets/custom_icon_button.dart';
 import 'package:prueba_tecnica_finanzas_frontend2/presentation/widgets/transaction_card.dart';
@@ -27,16 +28,26 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _bloc = context.read<TransactionBloc>();
-    _loadTransactions();
+    // Ya no necesitamos cargar aquí, se hizo en el main.dart
   }
 
-  void _loadTransactions() {
-    _bloc.add(FetchTransactionsRequested());
+  /// Filtra la lista de transacciones según el tipo seleccionado
+  List<Transaction> _getFilteredTransactions(List<Transaction> transactions) {
+    if (selectedType == null) return transactions;
+    return transactions.where((tx) => tx.type == selectedType).toList();
+  }
+
+  /// Helper para mostrar SnackBars
+  void _showMessage(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   Future<void> _logout() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('token');
+    await prefs.remove(kTokenKey);
     if (!mounted) return;
     context.go('/login');
   }
@@ -46,9 +57,8 @@ class _HomePageState extends State<HomePage> {
       '/add-transaction',
       extra: transactionId,
     );
-
     if (updated == true && mounted) {
-      _loadTransactions();
+      _bloc.add(FetchTransactionsRequested()); // Recargar lista si hubo cambios
     }
   }
 
@@ -57,10 +67,47 @@ class _HomePageState extends State<HomePage> {
       '/transaction-detail',
       extra: tx,
     );
-
     if (updatedTransaction != null && mounted) {
-      _loadTransactions(); // Dispara FetchTransactionsRequested()
+      _bloc.add(FetchTransactionsRequested());
     }
+  }
+
+  /// Botones y filtros repetidos en pantallas anchas
+  Widget _sidePanel() {
+    return Container(
+      width: 300,
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: CustomIconButton(
+                  label: 'Agregar',
+                  icon: Icons.add,
+                  backgroundColor: Colors.blueAccent,
+                  onPressed: () => _navigateToAddOrEdit(null),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: CustomIconButton(
+                  label: 'Estadísticas',
+                  icon: Icons.bar_chart,
+                  backgroundColor: Colors.green,
+                  onPressed: () => context.go('/statistics'),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          TransactionFilterChips(
+            selectedType: selectedType,
+            onSelected: (value) => setState(() => selectedType = value),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -79,139 +126,96 @@ class _HomePageState extends State<HomePage> {
         builder: (context, constraints) {
           final isWide = constraints.maxWidth > 800;
 
+          Widget transactionList(List<Transaction> currentList) {
+            final filteredTransactions = _getFilteredTransactions(currentList);
+
+            if (filteredTransactions.isEmpty) {
+              return const Center(
+                child: Text('No hay transacciones para mostrar'),
+              );
+            }
+
+            return ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: filteredTransactions.length,
+              itemBuilder: (context, index) {
+                final tx = filteredTransactions[index];
+                return TransactionCard(
+                  transaction: tx,
+                  onTap: () => _navigateToDetail(tx),
+                );
+              },
+            );
+          }
+
           Widget content = Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              CustomIconButton(
-                label: 'Agregar',
-                icon: Icons.add,
-                backgroundColor: Colors.blueAccent,
-                onPressed: () => _navigateToAddOrEdit(null),
+              Row(
+                children: [
+                  Expanded(
+                    child: CustomIconButton(
+                      label: 'Agregar',
+                      icon: Icons.add,
+                      backgroundColor: Colors.blueAccent,
+                      onPressed: () => _navigateToAddOrEdit(null),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: CustomIconButton(
+                      label: 'Estadísticas',
+                      icon: Icons.bar_chart,
+                      backgroundColor: Colors.green,
+                      onPressed: () => context.go('/statistics'),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
               TransactionFilterChips(
                 selectedType: selectedType,
-                onSelected: (value) {
-                  setState(() {
-                    selectedType = value;
-                  });
-                },
+                onSelected: (value) => setState(() => selectedType = value),
               ),
               const SizedBox(height: 16),
               Expanded(
                 child: BlocConsumer<TransactionBloc, TransactionState>(
                   bloc: _bloc,
                   listener: (context, state) {
-                    if (!mounted) return;
-
-                    if (state is TransactionError) {
-                      ScaffoldMessenger.of(
-                        context,
-                      ).showSnackBar(SnackBar(content: Text(state.message)));
-                    }
+                    if (state is TransactionError) _showMessage(state.message);
                   },
                   builder: (context, state) {
                     List<Transaction> currentList = [];
-                    if (state is TransactionListSuccess) {
+                    if (state is TransactionListSuccess)
                       currentList = state.transactions;
-                    }
 
-                    final filteredTransactions =
-                        selectedType == null
-                            ? currentList
-                            : currentList
-                                .where((tx) => tx.type == selectedType)
-                                .toList();
-
-                    if (state is TransactionLoading &&
-                        filteredTransactions.isEmpty) {
+                    if (state is TransactionLoading && currentList.isEmpty) {
                       return const Center(child: CircularProgressIndicator());
                     }
 
-                    if (filteredTransactions.isEmpty) {
-                      return const Center(
-                        child: Text('No hay transacciones para mostrar'),
-                      );
-                    }
-
-                    return ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: filteredTransactions.length,
-                      itemBuilder: (context, index) {
-                        final tx = filteredTransactions[index];
-                        return TransactionCard(
-                          transaction: tx,
-                          onTap: () => _navigateToDetail(tx),
-                        );
-                      },
-                    );
+                    return transactionList(currentList);
                   },
                 ),
               ),
             ],
           );
 
-          // Pantallas anchas
           if (isWide) {
             content = Row(
               children: [
-                Container(
-                  width: 300,
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      CustomIconButton(
-                        label: 'Agregar',
-                        icon: Icons.add,
-                        backgroundColor: Colors.blueAccent,
-                        onPressed: () => _navigateToAddOrEdit(null),
-                      ),
-                      const SizedBox(height: 20),
-                      TransactionFilterChips(
-                        selectedType: selectedType,
-                        onSelected: (value) {
-                          setState(() {
-                            selectedType = value;
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                ),
+                _sidePanel(),
                 const VerticalDivider(width: 1, color: Colors.grey),
                 Expanded(
                   child: BlocBuilder<TransactionBloc, TransactionState>(
                     bloc: _bloc,
                     builder: (context, state) {
                       List<Transaction> currentList = [];
-                      if (state is TransactionListSuccess) {
+                      if (state is TransactionListSuccess)
                         currentList = state.transactions;
+                      if (state is TransactionLoading && currentList.isEmpty) {
+                        return const Center(child: CircularProgressIndicator());
                       }
-
-                      final filteredTransactions =
-                          selectedType == null
-                              ? currentList
-                              : currentList
-                                  .where((tx) => tx.type == selectedType)
-                                  .toList();
-
-                      if (filteredTransactions.isEmpty) {
-                        return const Center(
-                          child: Text('No hay transacciones'),
-                        );
-                      }
-
-                      return ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: filteredTransactions.length,
-                        itemBuilder: (context, index) {
-                          final tx = filteredTransactions[index];
-                          return TransactionCard(
-                            transaction: tx,
-                            onTap: () => _navigateToDetail(tx),
-                          );
-                        },
-                      );
+                      return transactionList(currentList);
                     },
                   ),
                 ),

@@ -5,6 +5,7 @@ class CustomTextField extends StatefulWidget {
   final String label;
   final bool isPassword;
   final String? Function(String?)? validator;
+  final TextInputType? keyboardType; // ✅ Nuevo parámetro
 
   const CustomTextField({
     super.key,
@@ -12,6 +13,7 @@ class CustomTextField extends StatefulWidget {
     required this.label,
     this.isPassword = false,
     this.validator,
+    this.keyboardType, // ✅ Lo agregamos aquí
   });
 
   @override
@@ -33,6 +35,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
       controller: widget.controller,
       obscureText: _obscureText,
       validator: widget.validator,
+      keyboardType: widget.keyboardType, // ✅ Lo aplicamos aquí
       decoration: InputDecoration(
         labelText: widget.label,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),

@@ -18,28 +18,25 @@ class AddTransactionPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool isEditing = transactionId != null;
+    final isEditing = transactionId != null;
 
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              CustomBackHeader(
-                text:
-                    isEditing
-                        ? 'Actualiza los datos de tu transacción'
-                        : 'Registra una nueva transacción financiera',
-                backgroundColor: Colors.blueAccent,
-                iconColor: Colors.black,
-                textColor: Colors.black,
-              ),
-              Expanded(child: TransactionForm(transactionId: transactionId)),
-            ],
-          ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            CustomBackHeader(
+              text:
+                  isEditing
+                      ? 'Actualiza los datos de tu transacción'
+                      : 'Registra una nueva transacción financiera',
+              backgroundColor: Colors.blueAccent,
+              iconColor: Colors.black,
+              textColor: Colors.black,
+            ),
+            Expanded(child: TransactionForm(transactionId: transactionId)),
+          ],
         ),
       ),
     );
@@ -63,22 +60,6 @@ class _TransactionFormState extends State<TransactionForm> {
   TransactionCategory? _selectedCategory;
   bool _loading = false;
 
-  final Map<TransactionType, String> _typeLabels = {
-    TransactionType.income: 'Ingreso',
-    TransactionType.expense: 'Gasto',
-  };
-
-  final Map<TransactionCategory, String> _categoryLabels = {
-    TransactionCategory.food: 'Comida',
-    TransactionCategory.transport: 'Transporte',
-    TransactionCategory.entertainment: 'Entretenimiento',
-    TransactionCategory.shopping: 'Compras',
-    TransactionCategory.health: 'Salud',
-    TransactionCategory.education: 'Educación',
-    TransactionCategory.salary: 'Salario',
-    TransactionCategory.other: 'Otro',
-  };
-
   @override
   void initState() {
     super.initState();
@@ -92,37 +73,36 @@ class _TransactionFormState extends State<TransactionForm> {
 
   String getUserId() {
     final token = sl<ApiClient>().token;
-    if (token != null) {
-      final payload = Jwt.parseJwt(token);
-      return payload['user_id'] ?? '';
-    }
-    return '';
+    if (token == null) return '';
+    final payload = Jwt.parseJwt(token);
+    return payload['user_id'] ?? '';
   }
 
-  void _submit(BuildContext context) {
-    if (_formKey.currentState!.validate()) {
-      if (_selectedType == null || _selectedCategory == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Seleccione tipo y categoría')),
-        );
-        return;
-      }
+  void _onSubmit() {
+    if (!_formKey.currentState!.validate()) return;
 
-      final tx = Transaction(
-        id: widget.transactionId,
-        userId: getUserId(),
-        amount: double.parse(_amountController.text),
-        type: _selectedType!,
-        category: _selectedCategory!,
-        description: _descriptionController.text,
-        date: DateTime.now(),
+    if (_selectedType == null || _selectedCategory == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Seleccione tipo y categoría')),
       );
+      return;
+    }
 
-      if (widget.transactionId == null) {
-        context.read<TransactionBloc>().add(CreateTransactionRequested(tx));
-      } else {
-        context.read<TransactionBloc>().add(UpdateTransactionRequested(tx));
-      }
+    final tx = Transaction(
+      id: widget.transactionId,
+      userId: getUserId(),
+      amount: double.parse(_amountController.text),
+      type: _selectedType!,
+      category: _selectedCategory!,
+      description: _descriptionController.text,
+      date: DateTime.now(),
+    );
+
+    final bloc = context.read<TransactionBloc>();
+    if (widget.transactionId == null) {
+      bloc.add(CreateTransactionRequested(tx));
+    } else {
+      bloc.add(UpdateTransactionRequested(tx));
     }
   }
 
@@ -133,50 +113,40 @@ class _TransactionFormState extends State<TransactionForm> {
         if (!mounted) return;
 
         if (state is TransactionLoaded && widget.transactionId != null) {
-          _amountController.text = state.transaction.amount.toString();
-          _selectedType = state.transaction.type;
-          _selectedCategory = state.transaction.category;
-          _descriptionController.text = state.transaction.description;
-          _loading = false;
-          setState(() {});
+          setState(() {
+            _amountController.text = state.transaction.amount.toString();
+            _selectedType = state.transaction.type;
+            _selectedCategory = state.transaction.category;
+            _descriptionController.text = state.transaction.description;
+            _loading = false;
+          });
         }
 
         if (state is TransactionCreated) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              backgroundColor: Colors.greenAccent.shade700,
-              content: const Text(
-                'Transacción creada exitosamente',
-                style: TextStyle(color: Colors.white),
-              ),
+              content: const Text('Transacción creada exitosamente'),
+              backgroundColor: Colors.green.shade600,
             ),
           );
-          if (mounted) context.pop(true); // Para crear solo indicamos cambio
+          context.pop(true);
         }
 
         if (state is TransactionUpdated) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              backgroundColor: Colors.greenAccent.shade700,
-              content: const Text(
-                'Transacción actualizada correctamente',
-                style: TextStyle(color: Colors.white),
-              ),
+              content: const Text('Transacción actualizada correctamente'),
+              backgroundColor: Colors.green.shade600,
             ),
           );
-          if (mounted) {
-            context.pop(state.transaction);
-          }
+          context.pop(state.transaction);
         }
 
         if (state is TransactionError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
+              content: Text(state.message),
               backgroundColor: Colors.redAccent,
-              content: Text(
-                state.message,
-                style: const TextStyle(color: Colors.white),
-              ),
             ),
           );
         }
@@ -186,8 +156,8 @@ class _TransactionFormState extends State<TransactionForm> {
               ? const Center(child: CircularProgressIndicator())
               : LayoutBuilder(
                 builder: (context, constraints) {
-                  double maxWidth =
-                      constraints.maxWidth < 600 ? double.infinity : 500;
+                  final double screenWidth = constraints.maxWidth.toDouble();
+                  double maxWidth = screenWidth < 600 ? double.infinity : 500;
                   return Center(
                     child: SingleChildScrollView(
                       padding: const EdgeInsets.symmetric(
@@ -227,40 +197,36 @@ class _TransactionFormState extends State<TransactionForm> {
                               CustomTextField(
                                 controller: _amountController,
                                 label: 'Monto',
-                                validator:
-                                    (value) =>
-                                        value == null || value.isEmpty
-                                            ? 'Ingrese un monto'
-                                            : null,
+                                keyboardType: TextInputType.number,
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Ingrese un monto';
+                                  }
+                                  final parsed = double.tryParse(value);
+                                  if (parsed == null || parsed <= 0) {
+                                    return 'Ingrese un monto válido';
+                                  }
+                                  return null;
+                                },
                               ),
                               const SizedBox(height: 16),
                               CustomDropdown<TransactionType>(
                                 value: _selectedType,
                                 label: 'Tipo',
-                                itemsMap: _typeLabels,
+                                itemsMap: transactionTypeTranslations,
                                 onChanged:
-                                    (value) =>
-                                        setState(() => _selectedType = value),
-                                validator:
-                                    (value) =>
-                                        value == null
-                                            ? 'Seleccione tipo'
-                                            : null,
+                                    (v) => setState(() => _selectedType = v),
                               ),
+
                               const SizedBox(height: 16),
+
                               CustomDropdown<TransactionCategory>(
                                 value: _selectedCategory,
                                 label: 'Categoría',
-                                itemsMap: _categoryLabels,
+                                itemsMap: transactionCategoryTranslations,
                                 onChanged:
-                                    (value) => setState(
-                                      () => _selectedCategory = value,
-                                    ),
-                                validator:
-                                    (value) =>
-                                        value == null
-                                            ? 'Seleccione categoría'
-                                            : null,
+                                    (v) =>
+                                        setState(() => _selectedCategory = v),
                               ),
                               const SizedBox(height: 16),
                               CustomTextField(
@@ -275,7 +241,7 @@ class _TransactionFormState extends State<TransactionForm> {
                                       widget.transactionId == null
                                           ? 'Guardar'
                                           : 'Actualizar',
-                                  onPressed: () => _submit(context),
+                                  onPressed: _onSubmit,
                                   backgroundColor: Colors.blueGrey,
                                   textColor: Colors.white,
                                 ),

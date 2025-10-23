@@ -9,35 +9,14 @@ import 'package:prueba_tecnica_finanzas_frontend2/presentation/widgets/custom_ba
 import 'package:prueba_tecnica_finanzas_frontend2/presentation/widgets/custom_icon_button.dart';
 import 'package:prueba_tecnica_finanzas_frontend2/presentation/widgets/transaction_card_detail.dart';
 
-class TransactionDetailPage extends StatefulWidget {
-  final Transaction transaction;
-
-  const TransactionDetailPage({super.key, required this.transaction});
-
-  @override
-  State<TransactionDetailPage> createState() => _TransactionDetailPageState();
+/// Helper Extensions para traducir enums
+extension TransactionTypeExtension on TransactionType {
+  String get label => this == TransactionType.income ? 'Ingreso' : 'Gasto';
 }
 
-class _TransactionDetailPageState extends State<TransactionDetailPage> {
-  late Transaction currentTransaction;
-
-  @override
-  void initState() {
-    super.initState();
-    currentTransaction = widget.transaction;
-  }
-
-  String translateType(TransactionType type) {
-    switch (type) {
-      case TransactionType.income:
-        return 'Ingreso';
-      case TransactionType.expense:
-        return 'Gasto';
-    }
-  }
-
-  String translateCategory(TransactionCategory category) {
-    switch (category) {
+extension TransactionCategoryExtension on TransactionCategory {
+  String get label {
+    switch (this) {
       case TransactionCategory.food:
         return 'Comida';
       case TransactionCategory.transport:
@@ -57,8 +36,8 @@ class _TransactionDetailPageState extends State<TransactionDetailPage> {
     }
   }
 
-  IconData getIconByCategory(TransactionCategory category) {
-    switch (category) {
+  IconData get icon {
+    switch (this) {
       case TransactionCategory.food:
         return Icons.restaurant;
       case TransactionCategory.transport:
@@ -77,7 +56,34 @@ class _TransactionDetailPageState extends State<TransactionDetailPage> {
         return Icons.more_horiz;
     }
   }
+}
 
+class TransactionDetailPage extends StatefulWidget {
+  final Transaction transaction;
+
+  const TransactionDetailPage({super.key, required this.transaction});
+
+  @override
+  State<TransactionDetailPage> createState() => _TransactionDetailPageState();
+}
+
+class _TransactionDetailPageState extends State<TransactionDetailPage> {
+  late Transaction _currentTransaction;
+  late final TransactionBloc _bloc;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentTransaction = widget.transaction;
+    _bloc = context.read<TransactionBloc>();
+  }
+
+  String get formattedDate => DateFormat(
+    'EEEE, dd MMMM yyyy HH:mm',
+    'es_CO',
+  ).format(_currentTransaction.date);
+
+  /// Confirmar eliminación
   Future<void> _confirmDelete() async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -102,28 +108,28 @@ class _TransactionDetailPageState extends State<TransactionDetailPage> {
 
     if (confirm != true) return;
 
-    context.read<TransactionBloc>().add(
-      DeleteTransactionRequested(currentTransaction.id!),
-    );
+    if (_currentTransaction.id == null) return;
 
+    _bloc.add(DeleteTransactionRequested(_currentTransaction.id!));
+
+    // Escuchar cambios de estado para mostrar SnackBar de éxito/error
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Transacción eliminada correctamente')),
     );
 
-    context.pop(currentTransaction);
+    context.pop(_currentTransaction);
   }
 
+  /// Editar transacción
   Future<void> _editTransaction() async {
     final updatedTransaction = await context.push<Transaction>(
       '/add-transaction',
-      extra: currentTransaction.id,
+      extra: _currentTransaction.id,
     );
 
     if (updatedTransaction != null && mounted) {
-      setState(() {
-        currentTransaction = updatedTransaction;
-      });
+      setState(() => _currentTransaction = updatedTransaction);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Transacción actualizada correctamente'),
@@ -133,24 +139,77 @@ class _TransactionDetailPageState extends State<TransactionDetailPage> {
     }
   }
 
+  /// Card de información adicional
+  Widget _buildInfoCard() {
+    return Card(
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.description_outlined),
+              title: const Text('Descripción'),
+              subtitle: Text(
+                _currentTransaction.description.isNotEmpty
+                    ? _currentTransaction.description
+                    : 'Sin descripción',
+              ),
+            ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.calendar_today_outlined),
+              title: const Text('Fecha'),
+              subtitle: Text(formattedDate),
+            ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.category_outlined),
+              title: const Text('Categoría'),
+              subtitle: Text(_currentTransaction.category.label),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Botones de acción
+  Widget _buildActions() {
+    return Wrap(
+      spacing: 16,
+      runSpacing: 16,
+      alignment: WrapAlignment.center,
+      children: [
+        CustomIconButton(
+          label: 'Editar',
+          icon: Icons.edit,
+          backgroundColor: Colors.blueAccent,
+          onPressed: _editTransaction,
+        ),
+        CustomIconButton(
+          label: 'Eliminar',
+          icon: Icons.delete,
+          backgroundColor: Colors.redAccent,
+          iconColor: Colors.white,
+          onPressed: _confirmDelete,
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final formattedDate = DateFormat(
-      'EEEE, dd MMMM yyyy HH:mm',
-      'es_CO',
-    ).format(currentTransaction.date);
-
     return Scaffold(
       body: LayoutBuilder(
         builder: (context, constraints) {
-          double contentWidth;
-          if (constraints.maxWidth < 600) {
-            contentWidth = double.infinity;
-          } else if (constraints.maxWidth < 1000) {
-            contentWidth = constraints.maxWidth * 0.7;
-          } else {
-            contentWidth = 600;
-          }
+          final contentWidth =
+              constraints.maxWidth < 600
+                  ? double.infinity
+                  : constraints.maxWidth < 1000
+                  ? constraints.maxWidth * 0.7
+                  : 600.0;
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(20),
@@ -166,71 +225,14 @@ class _TransactionDetailPageState extends State<TransactionDetailPage> {
                       backgroundColor: Colors.blueAccent,
                       iconColor: Colors.black,
                       textColor: Colors.black,
-                      onBack: () => context.pop(currentTransaction),
+                      onBack: () => context.pop(_currentTransaction),
                     ),
                     const SizedBox(height: 20),
-                    TransactionCardDetail(transaction: currentTransaction),
+                    TransactionCardDetail(transaction: _currentTransaction),
                     const SizedBox(height: 30),
-                    Card(
-                      elevation: 3,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            ListTile(
-                              leading: const Icon(Icons.description_outlined),
-                              title: const Text('Descripción'),
-                              subtitle: Text(
-                                currentTransaction.description.isNotEmpty
-                                    ? currentTransaction.description
-                                    : 'Sin descripción',
-                              ),
-                            ),
-                            const Divider(),
-                            ListTile(
-                              leading: const Icon(
-                                Icons.calendar_today_outlined,
-                              ),
-                              title: const Text('Fecha'),
-                              subtitle: Text(formattedDate),
-                            ),
-                            const Divider(),
-                            ListTile(
-                              leading: const Icon(Icons.category_outlined),
-                              title: const Text('Categoría'),
-                              subtitle: Text(
-                                translateCategory(currentTransaction.category),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                    _buildInfoCard(),
                     const SizedBox(height: 30),
-                    Wrap(
-                      spacing: 16,
-                      runSpacing: 16,
-                      alignment: WrapAlignment.center,
-                      children: [
-                        CustomIconButton(
-                          label: 'Editar',
-                          icon: Icons.edit,
-                          backgroundColor: Colors.blueAccent,
-                          onPressed: _editTransaction,
-                        ),
-                        CustomIconButton(
-                          label: 'Eliminar',
-                          icon: Icons.delete,
-                          backgroundColor: Colors.redAccent,
-                          iconColor: Colors.white,
-                          onPressed: _confirmDelete,
-                        ),
-                      ],
-                    ),
+                    _buildActions(),
                     const SizedBox(height: 30),
                   ],
                 ),
