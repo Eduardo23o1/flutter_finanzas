@@ -8,7 +8,7 @@ import '../api/api_client.dart';
 final sl = GetIt.instance;
 
 Future<void> initInjection({String? initialToken}) async {
-  const String apiBaseUrl = 'http://192.168.0.23:8000';
+  const String apiBaseUrl = 'http://192.168.1.99:8000';
 
   // ApiClient
   sl.registerLazySingleton<ApiClient>(() => ApiClient(baseUrl: apiBaseUrl));

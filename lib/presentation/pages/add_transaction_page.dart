@@ -114,7 +114,9 @@ class _TransactionFormState extends State<TransactionForm> {
 
         if (state is TransactionLoaded && widget.transactionId != null) {
           setState(() {
-            _amountController.text = state.transaction.amount.toString();
+            _amountController.text = state.transaction.amount.toStringAsFixed(
+              0,
+            );
             _selectedType = state.transaction.type;
             _selectedCategory = state.transaction.category;
             _descriptionController.text = state.transaction.description;
@@ -197,7 +199,7 @@ class _TransactionFormState extends State<TransactionForm> {
                               CustomTextField(
                                 controller: _amountController,
                                 label: 'Monto',
-                                keyboardType: TextInputType.number,
+                                inputType: InputValidationType.number,
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
                                     return 'Ingrese un monto';

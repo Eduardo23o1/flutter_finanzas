@@ -102,6 +102,7 @@ class _LoginPageState extends State<LoginPage> {
                           CustomTextField(
                             controller: _emailController,
                             label: 'Email',
+                            inputType: InputValidationType.email,
                             validator:
                                 (value) =>
                                     value == null || value.isEmpty
@@ -112,6 +113,7 @@ class _LoginPageState extends State<LoginPage> {
                           CustomTextField(
                             controller: _passwordController,
                             label: 'Contraseña',
+                            inputType: InputValidationType.password,
                             isPassword: true,
                             validator:
                                 (value) =>

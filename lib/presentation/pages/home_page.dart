@@ -28,7 +28,6 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _bloc = context.read<TransactionBloc>();
-    // Ya no necesitamos cargar aquí, se hizo en el main.dart
   }
 
   /// Filtra la lista de transacciones según el tipo seleccionado

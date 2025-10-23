@@ -34,36 +34,6 @@ class TransactionCardDetail extends StatelessWidget {
     }
   }
 
-  String translateType(TransactionType type) {
-    switch (type) {
-      case TransactionType.income:
-        return 'Ingreso';
-      case TransactionType.expense:
-        return 'Gasto';
-    }
-  }
-
-  String translateCategory(TransactionCategory category) {
-    switch (category) {
-      case TransactionCategory.food:
-        return 'Comida';
-      case TransactionCategory.transport:
-        return 'Transporte';
-      case TransactionCategory.entertainment:
-        return 'Entretenimiento';
-      case TransactionCategory.shopping:
-        return 'Compras';
-      case TransactionCategory.health:
-        return 'Salud';
-      case TransactionCategory.education:
-        return 'Educación';
-      case TransactionCategory.salary:
-        return 'Salario';
-      case TransactionCategory.other:
-        return 'Otros';
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final isIncome = transaction.type == TransactionType.income;
@@ -93,7 +63,8 @@ class TransactionCardDetail extends StatelessWidget {
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    translateType(transaction.type),
+                    transactionTypeTranslations[transaction.type] ??
+                        'Desconocido',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -105,6 +76,7 @@ class TransactionCardDetail extends StatelessWidget {
                     NumberFormat.currency(
                       locale: 'es_CO',
                       symbol: '\$',
+                      decimalDigits: 0,
                     ).format(transaction.amount),
                     style: TextStyle(
                       fontSize: 36,
@@ -114,7 +86,8 @@ class TransactionCardDetail extends StatelessWidget {
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    translateCategory(transaction.category),
+                    transactionCategoryTranslations[transaction.category] ??
+                        'Desconocido',
                     style: const TextStyle(fontSize: 18, color: Colors.black87),
                   ),
                 ],
