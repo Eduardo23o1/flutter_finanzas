@@ -49,7 +49,6 @@ class TransactionDeleted extends TransactionState {
   List<Object?> get props => [transactionId];
 }
 
-// ✅ NUEVOS ESTADOS
 class TransactionCreated extends TransactionState {
   final Transaction transaction;
   TransactionCreated(this.transaction);

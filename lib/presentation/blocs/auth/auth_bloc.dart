@@ -44,7 +44,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
       if (token != null) {
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('firebaseToken', token);
+        await prefs.setString(kTokenKey, token);
 
         emit(Authenticated());
       } else {

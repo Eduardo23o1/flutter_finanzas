@@ -9,6 +9,7 @@ class CustomTextField extends StatefulWidget {
   final bool isPassword;
   final String? Function(String?)? validator;
   final InputValidationType inputType;
+  final Widget? suffixIcon; // 👈 NUEVO parámetro
 
   const CustomTextField({
     super.key,
@@ -17,6 +18,7 @@ class CustomTextField extends StatefulWidget {
     this.isPassword = false,
     this.validator,
     this.inputType = InputValidationType.none,
+    this.suffixIcon, // 👈 AGREGA AQUÍ TAMBIÉN
   });
 
   @override

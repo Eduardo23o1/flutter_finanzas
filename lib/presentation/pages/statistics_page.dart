@@ -10,15 +10,31 @@ import '../widgets/choice_chip_selector.dart';
 import '../widgets/date_range_selector.dart';
 import '../widgets/totals_card.dart';
 import '../widgets/statistics_chart.dart';
+import '../../core/di/injection.dart';
 
-class StatisticsPage extends StatefulWidget {
+class StatisticsPage extends StatelessWidget {
   const StatisticsPage({super.key});
 
   @override
-  State<StatisticsPage> createState() => _StatisticsPageState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create:
+          (_) => StatisticsBloc(repository: sl())..add(
+            LoadStatistics(category: 'Todas', startDate: null, endDate: null),
+          ),
+      child: const _StatisticsView(),
+    );
+  }
 }
 
-class _StatisticsPageState extends State<StatisticsPage> {
+class _StatisticsView extends StatefulWidget {
+  const _StatisticsView();
+
+  @override
+  State<_StatisticsView> createState() => _StatisticsViewState();
+}
+
+class _StatisticsViewState extends State<_StatisticsView> {
   String selectedCategory = 'Todas';
   DateTimeRange? selectedDateRange;
   String selectedType = 'Ambos';
@@ -41,12 +57,6 @@ class _StatisticsPageState extends State<StatisticsPage> {
     Colors.brown,
     Colors.indigo,
   ];
-
-  @override
-  void initState() {
-    super.initState();
-    _loadStatistics();
-  }
 
   void _loadStatistics() {
     context.read<StatisticsBloc>().add(
@@ -89,7 +99,6 @@ class _StatisticsPageState extends State<StatisticsPage> {
       body: SafeArea(
         child: Column(
           children: [
-            // Encabezado
             CustomBackHeader(
               text: "Estadísticas",
               backgroundColor: Colors.blueAccent,
@@ -97,14 +106,12 @@ class _StatisticsPageState extends State<StatisticsPage> {
               textColor: Colors.black,
               onBack: () => context.go('/home'),
             ),
-
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Selector de categoría
                     ChoiceChipSelector(
                       options: categories.values.toList(),
                       selectedValue: categories[selectedCategory]!,
@@ -115,17 +122,13 @@ class _StatisticsPageState extends State<StatisticsPage> {
                                   (entry) => entry.value == selectedLabel,
                                 )
                                 .key;
-
                         setState(() {
                           selectedCategory = matchedKey;
                           _loadStatistics();
                         });
                       },
                     ),
-
                     const SizedBox(height: 12),
-
-                    // Selector de tipo de transacción
                     ChoiceChipSelector(
                       options: ['Ambos', 'Ingresos', 'Gastos'],
                       selectedValue: selectedType,
@@ -135,10 +138,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
                         });
                       },
                     ),
-
                     const SizedBox(height: 12),
-
-                    // Selector de rango de fechas
                     DateRangeSelector(
                       selectedRange: selectedDateRange,
                       onRangeSelected: (range) {
@@ -148,10 +148,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
                         });
                       },
                     ),
-
                     const SizedBox(height: 24),
-
-                    // Selector de tipo de gráfica
                     ChoiceChipSelector(
                       options: ['Barras', 'Pastel'],
                       selectedValue: selectedChart,
@@ -161,10 +158,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
                         });
                       },
                     ),
-
                     const SizedBox(height: 16),
-
-                    // Resumen de totales
                     BlocBuilder<StatisticsBloc, StatisticsState>(
                       builder: (context, state) {
                         if (state is StatisticsLoaded) {
@@ -179,7 +173,6 @@ class _StatisticsPageState extends State<StatisticsPage> {
                             filtered,
                             TransactionType.expense,
                           );
-
                           return TotalsCard(
                             totalIncome: totalIncome,
                             totalExpense: totalExpense,
@@ -189,10 +182,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
                         return const SizedBox();
                       },
                     ),
-
                     const SizedBox(height: 16),
-
-                    // Gráfica
                     SizedBox(
                       height: 400,
                       child: BlocBuilder<StatisticsBloc, StatisticsState>(
@@ -205,7 +195,6 @@ class _StatisticsPageState extends State<StatisticsPage> {
                             final filtered = _filterTransactions(
                               state.transactions,
                             );
-
                             return StatisticsChart(
                               transactions: filtered,
                               selectedType: selectedType,

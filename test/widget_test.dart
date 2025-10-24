@@ -1,30 +1,48 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
-import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-
+import 'package:go_router/go_router.dart';
+import 'package:mockito/mockito.dart';
+import 'package:prueba_tecnica_finanzas_frontend2/domain/repositories/transaction_repository.dart';
+import 'package:get_it/get_it.dart';
 import 'package:prueba_tecnica_finanzas_frontend2/main.dart';
+import 'package:prueba_tecnica_finanzas_frontend2/presentation/blocs/transaction/transaction_bloc.dart';
+import 'package:prueba_tecnica_finanzas_frontend2/presentation/pages/home_page.dart';
+
+class MockTransactionRepository extends Mock implements TransactionRepository {}
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  final sl = GetIt.instance;
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+  setUp(() {
+    sl.registerLazySingleton<TransactionRepository>(
+      () => MockTransactionRepository(),
+    );
+  });
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+  tearDown(() {
+    sl.reset(); // Limpia el registro para el próximo test
+  });
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+  testWidgets('HomePage loads correctly', (WidgetTester tester) async {
+    final router = GoRouter(
+      initialLocation: '/home',
+      routes: [
+        GoRoute(path: '/home', builder: (context, state) => const HomePage()),
+      ],
+    );
+
+    await tester.pumpWidget(
+      BlocProvider<TransactionBloc>(
+        create:
+            (_) =>
+                TransactionBloc(repository: sl<TransactionRepository>())
+                  ..add(FetchTransactionsRequested()),
+        child: MyApp(router: router),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    expect(find.byType(HomePage), findsOneWidget);
   });
 }
