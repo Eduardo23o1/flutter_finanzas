@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:prueba_tecnica_finanzas_frontend2/domain/models/transaction_category_extension.dart';
 import '../../domain/models/transaction.dart';
 import '../../domain/models/transaction_enums.dart';
 
@@ -12,27 +13,6 @@ class TransactionCardDetail extends StatelessWidget {
     required this.transaction,
     this.maxWidth,
   });
-
-  IconData getIconByCategory(TransactionCategory category) {
-    switch (category) {
-      case TransactionCategory.food:
-        return Icons.restaurant;
-      case TransactionCategory.transport:
-        return Icons.directions_bus;
-      case TransactionCategory.entertainment:
-        return Icons.movie;
-      case TransactionCategory.shopping:
-        return Icons.shopping_bag;
-      case TransactionCategory.health:
-        return Icons.local_hospital;
-      case TransactionCategory.education:
-        return Icons.school;
-      case TransactionCategory.salary:
-        return Icons.attach_money;
-      case TransactionCategory.other:
-        return Icons.more_horiz;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -56,12 +36,11 @@ class TransactionCardDetail extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 20),
               child: Column(
                 children: [
-                  Icon(
-                    getIconByCategory(transaction.category),
-                    color: mainColor,
-                    size: 50,
-                  ),
+                  // Icono de la categoría
+                  Icon(transaction.category.icon, color: mainColor, size: 50),
                   const SizedBox(height: 10),
+
+                  // Tipo de transacción
                   Text(
                     transactionTypeTranslations[transaction.type] ??
                         'Desconocido',
@@ -72,6 +51,8 @@ class TransactionCardDetail extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 15),
+
+                  // Monto
                   Text(
                     NumberFormat.currency(
                       locale: 'es_CO',
@@ -85,9 +66,10 @@ class TransactionCardDetail extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 10),
+
+                  // Nombre de la categoría
                   Text(
-                    transactionCategoryTranslations[transaction.category] ??
-                        'Desconocido',
+                    transaction.category.label,
                     style: const TextStyle(fontSize: 18, color: Colors.black87),
                   ),
                 ],

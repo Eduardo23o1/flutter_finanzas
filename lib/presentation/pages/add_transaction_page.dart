@@ -78,6 +78,24 @@ class _TransactionFormState extends State<TransactionForm> {
     return payload['user_id'] ?? '';
   }
 
+  /// Filtra las categorías según el tipo seleccionado
+  List<TransactionCategory> getCategoriesForSelectedType() {
+    if (_selectedType == null) return TransactionCategory.all;
+    return TransactionCategory.all
+        .where(
+          (c) => c.type == _selectedType! || c == TransactionCategory.other,
+        )
+        .toList();
+  }
+
+  /// Construye el itemsMap para CustomDropdown
+  Map<TransactionCategory, String> get categoryItemsMap {
+    final categories = getCategoriesForSelectedType();
+    return {
+      for (var c in categories) c: transactionCategoryTranslations[c.name]!,
+    };
+  }
+
   void _onSubmit() {
     if (!_formKey.currentState!.validate()) return;
 
@@ -212,24 +230,37 @@ class _TransactionFormState extends State<TransactionForm> {
                                 },
                               ),
                               const SizedBox(height: 16),
+
+                              // Dropdown Tipo
                               CustomDropdown<TransactionType>(
                                 value: _selectedType,
                                 label: 'Tipo',
                                 itemsMap: transactionTypeTranslations,
                                 onChanged:
-                                    (v) => setState(() => _selectedType = v),
+                                    (v) => setState(() {
+                                      _selectedType = v;
+                                      if (_selectedCategory != null &&
+                                          _selectedCategory!.type !=
+                                              _selectedType! &&
+                                          _selectedCategory !=
+                                              TransactionCategory.other) {
+                                        _selectedCategory = null;
+                                      }
+                                    }),
                               ),
 
                               const SizedBox(height: 16),
 
+                              // Dropdown Categoría
                               CustomDropdown<TransactionCategory>(
                                 value: _selectedCategory,
                                 label: 'Categoría',
-                                itemsMap: transactionCategoryTranslations,
+                                itemsMap: categoryItemsMap,
                                 onChanged:
                                     (v) =>
                                         setState(() => _selectedCategory = v),
                               ),
+
                               const SizedBox(height: 16),
                               CustomTextField(
                                 controller: _descriptionController,

@@ -2,15 +2,29 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:prueba_tecnica_finanzas_frontend2/domain/models/transaction.dart';
 import 'package:prueba_tecnica_finanzas_frontend2/domain/models/transaction_enums.dart';
-import '../../domain/models/transaction.dart';
+import '../../core/di/injection.dart';
 import '../blocs/statistics/statistics_bloc.dart';
 import '../widgets/custom_back_header.dart';
 import '../widgets/choice_chip_selector.dart';
 import '../widgets/date_range_selector.dart';
 import '../widgets/totals_card.dart';
 import '../widgets/statistics_chart.dart';
-import '../../core/di/injection.dart';
+
+extension TransactionListExtension on List<Transaction> {
+  List<Transaction> filterByType(String type) {
+    if (type == 'Ingresos') {
+      return where((t) => t.type == TransactionType.income).toList();
+    } else if (type == 'Gastos') {
+      return where((t) => t.type == TransactionType.expense).toList();
+    }
+    return this;
+  }
+
+  int sumByType(TransactionType type) =>
+      where((t) => t.type == type).fold(0, (sum, t) => sum + t.amount.toInt());
+}
 
 class StatisticsPage extends StatelessWidget {
   const StatisticsPage({super.key});
@@ -40,12 +54,6 @@ class _StatisticsViewState extends State<_StatisticsView> {
   String selectedType = 'Ambos';
   String selectedChart = 'Barras';
 
-  final categories = {
-    'Todas': 'Todas',
-    for (var entry in transactionCategoryTranslations.entries)
-      entry.key.name: entry.value,
-  };
-
   final List<Color> pieColors = [
     Colors.blueAccent,
     Colors.redAccent,
@@ -58,7 +66,32 @@ class _StatisticsViewState extends State<_StatisticsView> {
     Colors.indigo,
   ];
 
-  void _loadStatistics() {
+  /// Mapa completo de todas las categorías
+  Map<String, String> get allCategories => {
+    'Todas': 'Todas',
+    for (var c in TransactionCategory.all)
+      c.name: transactionCategoryTranslations[c.name]!,
+  };
+
+  /// Filtrar categorías según tipo seleccionado
+  Map<String, String> get filteredCategories {
+    if (selectedType == 'Ingresos') {
+      return {
+        'Todas': 'Todas',
+        for (var c in TransactionCategory.incomeCategories)
+          c.name: transactionCategoryTranslations[c.name]!,
+      };
+    } else if (selectedType == 'Gastos') {
+      return {
+        'Todas': 'Todas',
+        for (var c in TransactionCategory.expenseCategories)
+          c.name: transactionCategoryTranslations[c.name]!,
+      };
+    }
+    return allCategories;
+  }
+
+  void _updateFilters() {
     context.read<StatisticsBloc>().add(
       LoadStatistics(
         category: selectedCategory,
@@ -66,25 +99,6 @@ class _StatisticsViewState extends State<_StatisticsView> {
         endDate: selectedDateRange?.end,
       ),
     );
-  }
-
-  List<Transaction> _filterTransactions(List<Transaction> transactions) {
-    if (selectedType == 'Ingresos') {
-      return transactions
-          .where((t) => t.type == TransactionType.income)
-          .toList();
-    } else if (selectedType == 'Gastos') {
-      return transactions
-          .where((t) => t.type == TransactionType.expense)
-          .toList();
-    }
-    return transactions;
-  }
-
-  int _sumByType(List<Transaction> transactions, TransactionType type) {
-    return transactions
-        .where((t) => t.type == type)
-        .fold(0, (sum, t) => sum + t.amount.toInt());
   }
 
   @override
@@ -112,100 +126,106 @@ class _StatisticsViewState extends State<_StatisticsView> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    ChoiceChipSelector(
-                      options: categories.values.toList(),
-                      selectedValue: categories[selectedCategory]!,
-                      onSelected: (selectedLabel) {
-                        final matchedKey =
-                            categories.entries
-                                .firstWhere(
-                                  (entry) => entry.value == selectedLabel,
-                                )
-                                .key;
-                        setState(() {
-                          selectedCategory = matchedKey;
-                          _loadStatistics();
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 12),
+                    /// Tipo de transacción
                     ChoiceChipSelector(
                       options: ['Ambos', 'Ingresos', 'Gastos'],
                       selectedValue: selectedType,
                       onSelected: (type) {
                         setState(() {
                           selectedType = type;
+
+                          // Resetear la categoría al cambiar tipo
+                          selectedCategory = 'Todas';
+
+                          _updateFilters();
                         });
                       },
                     ),
                     const SizedBox(height: 12),
+
+                    /// Categoría filtrada por tipo
+                    ChoiceChipSelector(
+                      options: filteredCategories.values.toList(),
+                      selectedValue: filteredCategories[selectedCategory]!,
+                      onSelected: (selectedLabel) {
+                        final matchedKey =
+                            filteredCategories.entries
+                                .firstWhere(
+                                  (entry) => entry.value == selectedLabel,
+                                )
+                                .key;
+                        setState(() {
+                          selectedCategory = matchedKey;
+                          _updateFilters();
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 12),
+
+                    /// Selector de fechas
                     DateRangeSelector(
                       selectedRange: selectedDateRange,
                       onRangeSelected: (range) {
                         setState(() {
                           selectedDateRange = range;
-                          _loadStatistics();
+                          _updateFilters();
                         });
                       },
                     ),
                     const SizedBox(height: 24),
+
+                    /// Tipo de gráfico
                     ChoiceChipSelector(
                       options: ['Barras', 'Pastel'],
                       selectedValue: selectedChart,
                       onSelected: (chart) {
-                        setState(() {
-                          selectedChart = chart;
-                        });
+                        setState(() => selectedChart = chart);
                       },
                     ),
                     const SizedBox(height: 16),
+
                     BlocBuilder<StatisticsBloc, StatisticsState>(
                       builder: (context, state) {
-                        if (state is StatisticsLoaded) {
-                          final filtered = _filterTransactions(
-                            state.transactions,
+                        if (state is StatisticsLoading) {
+                          return const Center(
+                            child: CircularProgressIndicator(),
                           );
-                          final totalIncome = _sumByType(
-                            filtered,
+                        } else if (state is StatisticsLoaded) {
+                          // Filtrar por tipo seleccionado
+                          final filtered = state.transactions.filterByType(
+                            selectedType,
+                          );
+
+                          final totalIncome = filtered.sumByType(
                             TransactionType.income,
                           );
-                          final totalExpense = _sumByType(
-                            filtered,
+                          final totalExpense = filtered.sumByType(
                             TransactionType.expense,
                           );
-                          return TotalsCard(
-                            totalIncome: totalIncome,
-                            totalExpense: totalExpense,
-                            currencyFormatter: currencyFormatter,
+
+                          return Column(
+                            children: [
+                              TotalsCard(
+                                totalIncome: totalIncome,
+                                totalExpense: totalExpense,
+                                currencyFormatter: currencyFormatter,
+                              ),
+                              const SizedBox(height: 16),
+                              SizedBox(
+                                height: 400,
+                                child: StatisticsChart(
+                                  transactions: filtered,
+                                  selectedType: selectedType,
+                                  selectedChart: selectedChart,
+                                  categories: filteredCategories,
+                                  pieColors: pieColors,
+                                ),
+                              ),
+                            ],
                           );
                         }
                         return const SizedBox();
                       },
-                    ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      height: 400,
-                      child: BlocBuilder<StatisticsBloc, StatisticsState>(
-                        builder: (context, state) {
-                          if (state is StatisticsLoading) {
-                            return const Center(
-                              child: CircularProgressIndicator(),
-                            );
-                          } else if (state is StatisticsLoaded) {
-                            final filtered = _filterTransactions(
-                              state.transactions,
-                            );
-                            return StatisticsChart(
-                              transactions: filtered,
-                              selectedType: selectedType,
-                              selectedChart: selectedChart,
-                              categories: categories,
-                              pieColors: pieColors,
-                            );
-                          }
-                          return const SizedBox();
-                        },
-                      ),
                     ),
                   ],
                 ),

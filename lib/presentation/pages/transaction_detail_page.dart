@@ -3,59 +3,16 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:prueba_tecnica_finanzas_frontend2/domain/models/transaction.dart';
+import 'package:prueba_tecnica_finanzas_frontend2/domain/models/transaction_category_extension.dart';
 import 'package:prueba_tecnica_finanzas_frontend2/domain/models/transaction_enums.dart';
 import 'package:prueba_tecnica_finanzas_frontend2/presentation/blocs/transaction/transaction_bloc.dart';
 import 'package:prueba_tecnica_finanzas_frontend2/presentation/widgets/custom_back_header.dart';
 import 'package:prueba_tecnica_finanzas_frontend2/presentation/widgets/custom_icon_button.dart';
 import 'package:prueba_tecnica_finanzas_frontend2/presentation/widgets/transaction_card_detail.dart';
 
-/// Helper Extensions para traducir enums
+/// Extensiones para traducción y iconos
 extension TransactionTypeExtension on TransactionType {
-  String get label => this == TransactionType.income ? 'Ingreso' : 'Gasto';
-}
-
-extension TransactionCategoryExtension on TransactionCategory {
-  String get label {
-    switch (this) {
-      case TransactionCategory.food:
-        return 'Comida';
-      case TransactionCategory.transport:
-        return 'Transporte';
-      case TransactionCategory.entertainment:
-        return 'Entretenimiento';
-      case TransactionCategory.shopping:
-        return 'Compras';
-      case TransactionCategory.health:
-        return 'Salud';
-      case TransactionCategory.education:
-        return 'Educación';
-      case TransactionCategory.salary:
-        return 'Salario';
-      case TransactionCategory.other:
-        return 'Otros';
-    }
-  }
-
-  IconData get icon {
-    switch (this) {
-      case TransactionCategory.food:
-        return Icons.restaurant;
-      case TransactionCategory.transport:
-        return Icons.directions_bus;
-      case TransactionCategory.entertainment:
-        return Icons.movie;
-      case TransactionCategory.shopping:
-        return Icons.shopping_bag;
-      case TransactionCategory.health:
-        return Icons.local_hospital;
-      case TransactionCategory.education:
-        return Icons.school;
-      case TransactionCategory.salary:
-        return Icons.attach_money;
-      case TransactionCategory.other:
-        return Icons.more_horiz;
-    }
-  }
+  String get label => transactionTypeTranslations[this] ?? name;
 }
 
 class TransactionDetailPage extends StatefulWidget {
@@ -83,7 +40,6 @@ class _TransactionDetailPageState extends State<TransactionDetailPage> {
     'es_CO',
   ).format(_currentTransaction.date);
 
-  /// Confirmar eliminación
   Future<void> _confirmDelete() async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -107,12 +63,10 @@ class _TransactionDetailPageState extends State<TransactionDetailPage> {
     );
 
     if (confirm != true) return;
-
     if (_currentTransaction.id == null) return;
 
     _bloc.add(DeleteTransactionRequested(_currentTransaction.id!));
 
-    // Escuchar cambios de estado para mostrar SnackBar de éxito/error
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Transacción eliminada correctamente')),
@@ -121,7 +75,6 @@ class _TransactionDetailPageState extends State<TransactionDetailPage> {
     context.pop(_currentTransaction);
   }
 
-  /// Editar transacción
   Future<void> _editTransaction() async {
     final updatedTransaction = await context.push<Transaction>(
       '/add-transaction',
@@ -139,7 +92,6 @@ class _TransactionDetailPageState extends State<TransactionDetailPage> {
     }
   }
 
-  /// Card de información adicional
   Widget _buildInfoCard() {
     return Card(
       elevation: 3,
@@ -165,7 +117,7 @@ class _TransactionDetailPageState extends State<TransactionDetailPage> {
             ),
             const Divider(),
             ListTile(
-              leading: const Icon(Icons.category_outlined),
+              leading: Icon(_currentTransaction.category.icon),
               title: const Text('Categoría'),
               subtitle: Text(_currentTransaction.category.label),
             ),
@@ -175,7 +127,6 @@ class _TransactionDetailPageState extends State<TransactionDetailPage> {
     );
   }
 
-  /// Botones de acción
   Widget _buildActions() {
     return Wrap(
       spacing: 16,

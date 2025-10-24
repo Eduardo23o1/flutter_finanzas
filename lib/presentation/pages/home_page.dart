@@ -192,7 +192,12 @@ class _HomePageState extends State<HomePage> {
                       return const Center(child: CircularProgressIndicator());
                     }
 
-                    return transactionList(currentList);
+                    return RefreshIndicator(
+                      onRefresh: () async {
+                        _bloc.add(FetchTransactionsRequested());
+                      },
+                      child: transactionList(currentList),
+                    );
                   },
                 ),
               ),
@@ -214,7 +219,12 @@ class _HomePageState extends State<HomePage> {
                       if (state is TransactionLoading && currentList.isEmpty) {
                         return const Center(child: CircularProgressIndicator());
                       }
-                      return transactionList(currentList);
+                      return RefreshIndicator(
+                        onRefresh: () async {
+                          _bloc.add(FetchTransactionsRequested());
+                        },
+                        child: transactionList(currentList),
+                      );
                     },
                   ),
                 ),

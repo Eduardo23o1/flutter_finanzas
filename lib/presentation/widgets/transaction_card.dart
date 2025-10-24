@@ -3,6 +3,10 @@ import 'package:intl/intl.dart';
 import 'package:prueba_tecnica_finanzas_frontend2/domain/models/transaction.dart';
 import 'package:prueba_tecnica_finanzas_frontend2/domain/models/transaction_enums.dart';
 
+extension TransactionCategoryExtension on TransactionCategory {
+  String get label => transactionCategoryTranslations[name] ?? 'Desconocido';
+}
+
 class TransactionCard extends StatelessWidget {
   final Transaction transaction;
   final VoidCallback onTap;
@@ -61,8 +65,7 @@ class TransactionCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    transactionCategoryTranslations[transaction.category] ??
-                        'Desconocido',
+                    transaction.category.label,
                     style: const TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 16,
