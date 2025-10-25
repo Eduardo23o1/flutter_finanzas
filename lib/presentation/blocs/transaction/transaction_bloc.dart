@@ -130,4 +130,10 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
       emit(TransactionError('Error: $e'));
     }
   }
+
+  void clearTransactions() {
+    _transactions.clear();
+    // ignore: invalid_use_of_visible_for_testing_member
+    emit(TransactionInitial());
+  }
 }

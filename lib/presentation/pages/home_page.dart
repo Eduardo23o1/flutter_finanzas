@@ -28,6 +28,7 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _bloc = context.read<TransactionBloc>();
+    _bloc.add(FetchTransactionsRequested());
   }
 
   /// Filtra la lista de transacciones según el tipo seleccionado
@@ -47,6 +48,9 @@ class _HomePageState extends State<HomePage> {
   Future<void> _logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(kTokenKey);
+
+    context.read<TransactionBloc>().clearTransactions();
+
     if (!mounted) return;
     context.go('/login');
   }
