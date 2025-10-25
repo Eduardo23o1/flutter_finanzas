@@ -1,16 +1,46 @@
-# prueba_tecnica_finanzas_frontend2
+Aplicativo Flutter para la gestión de transacciones financieras.
 
-A new Flutter project.
+---
 
-## Getting Started
+## Requisitos
 
-This project is a starting point for a Flutter application.
+* Flutter 3.29.2 (Stable)
+* Dart 3.7.2
+* Firebase CLI:
 
-A few resources to get you started if this is your first Flutter project:
+```bash
+npm install -g firebase-tools
+firebase login
+```
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+---
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Configuración de Firebase
+
+1. Crear un proyecto en [Firebase Console](https://console.firebase.google.com/).
+2. Habilitar **Authentication** con Email/Password.
+4. Desde la raíz del proyecto, correr:
+
+```bash
+flutterfire configure
+```
+
+5. Seleccionar **Android, iOS y Web** según se necesite.
+6. Esto generará el archivo `lib/firebase_options.dart` necesario para inicializar Firebase en tu app.
+
+---
+
+## Configuración del Backend Local
+
+1. Asegúrate de tener corriendo el backend en tu máquina (API REST).
+2. En `lib/core/dependency_injection/injection_container.dart` (o donde tengas el `ApiClient`) actualiza la IP:
+
+```dart
+const String apiBaseUrl = 'http://TU_IP_LOCAL:8000';
+```
+
+* Sustituye `TU_IP_LOCAL` por la IP de tu computador donde corre el backend.
+* Esto es necesario para que la app pueda conectarse desde Android, iOS o Web.
+* Reinicia la app después de cambiar la IP para que tome la nueva dirección.
+
+---
